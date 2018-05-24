@@ -1,11 +1,12 @@
 from examplePolicy import *
 from snellenPolicy import *
 from binaryBetaPolicy import *
+from rootFindingPolicy import *
 import scipy.stats as stats
 import numpy as np
 import random
 
-N_EXPERIMENTS = 1000
+N_EXPERIMENTS = 10000
 
 '''
 Size is in a range from 1 through 10
@@ -15,8 +16,8 @@ FLOOR = 0.25
 C = 0.8
 
 def main():
-	Policy = BinaryBetaPolicy
-	for paramIndex in range(14):
+	Policy = RootFindingPolicy
+	for paramIndex in range(30):
 		paramValue = Policy.getParamValue(paramIndex)
 		nMu, errorMu = bootstrapExperiments(paramValue, Policy)
 
@@ -34,6 +35,7 @@ def bootstrapExperiments(paramValue, Policy):
 	return np.mean(ns), np.mean(errors)
 
 def runPatientTest(truthParams, paramValue, Policy):
+	#print(truthParams)
 	policy = Policy(paramValue)
 	nDone = 0
 	while not policy.isDone():
