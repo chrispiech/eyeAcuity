@@ -1,11 +1,10 @@
-class ExamplePolicy:
+class RootFindingPolicy:
 
 	@staticmethod
 	def getParamValue(paramIndex) :
-		return 1 + paramIndex
+		return 1
 
 	def __init__(self, paramValue):
-		self.paramValue = paramValue
 		self.nTested = 0
 
 	def getNextSize(self):

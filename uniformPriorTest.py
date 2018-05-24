@@ -1,9 +1,11 @@
 from examplePolicy import *
+from snellenPolicy import *
+from binaryBetaPolicy import *
 import scipy.stats as stats
 import numpy as np
 import random
 
-N_EXPERIMENTS = 100
+N_EXPERIMENTS = 1000
 
 '''
 Size is in a range from 1 through 10
@@ -13,22 +15,26 @@ FLOOR = 0.25
 C = 0.8
 
 def main():
-	for alpha in frange(0., 1., 0.1):
-		nMu, errorMu = bootstrapExperiments(alpha, ExamplePolicy)
-		print(f'{alpha: .{4}}, {nMu}, {errorMu}')
+	Policy = BinaryBetaPolicy
+	for paramIndex in range(14):
+		paramValue = Policy.getParamValue(paramIndex)
+		nMu, errorMu = bootstrapExperiments(paramValue, Policy)
 
-def bootstrapExperiments(alpha, Policy):
+		print(f'{paramValue}, {nMu}, {errorMu}')
+
+def bootstrapExperiments(paramValue, Policy):
 	ns = []
 	errors = []
 	for i in range(N_EXPERIMENTS):
 		truthParams = sampleAPF()
-		n, error = runPatientTest(truthParams, alpha, Policy)
+		#print(truthParams)
+		n, error = runPatientTest(truthParams, paramValue, Policy)
 		ns.append(n)
 		errors.append(error)
 	return np.mean(ns), np.mean(errors)
 
-def runPatientTest(truthParams, alpha, Policy):
-	policy = Policy(alpha)
+def runPatientTest(truthParams, paramValue, Policy):
+	policy = Policy(paramValue)
 	nDone = 0
 	while not policy.isDone():
 		size = policy.getNextSize()
@@ -38,7 +44,7 @@ def runPatientTest(truthParams, alpha, Policy):
 
 	x_hat = policy.getAnswer()
 	x_star = truthParams[1]
-	error = pow((x_star - x_hat), 2)
+	error = abs(x_star - x_hat)/x_star
 	return nDone,error
 
 def simulateResponse(truthParams, size):
@@ -52,11 +58,11 @@ def simulateResponse(truthParams, size):
 	
 
 def sampleAPF():
-	b = stats.uniform.rvs(1, 8.5)
-	maxRangeSize = min(5, 10 - b - 0.5)
+	k_0 = stats.uniform.rvs(1, 6.5)
+	maxRangeSize = min(3, 10 - k_0 - 0.5)
 	rangeSize = stats.uniform.rvs(0.5, maxRangeSize)
-	k80 = b + rangeSize
-	return b, k80
+	k_1 = k_0 + rangeSize
+	return k_0, k_1
 
 def frange(small, large, delta):
 	values = []
