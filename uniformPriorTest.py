@@ -12,7 +12,6 @@ Size is in a range from 1 through 10
 FLOOR = 0.25
 C = 0.8
 
-
 def main():
 	for alpha in frange(0., 1., 0.1):
 		nMu, errorMu = bootstrapExperiments(alpha, ExamplePolicy)
@@ -53,8 +52,9 @@ def simulateResponse(truthParams, size):
 	
 
 def sampleAPF():
-	b = stats.uniform.rvs(1, 10)
-	rangeSize = stats.uniform.rvs(0.5, 5)
+	b = stats.uniform.rvs(1, 8.5)
+	maxRangeSize = min(5, 10 - b - 0.5)
+	rangeSize = stats.uniform.rvs(0.5, maxRangeSize)
 	k80 = b + rangeSize
 	return b, k80
 
