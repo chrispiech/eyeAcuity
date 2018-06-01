@@ -2,21 +2,22 @@ from examplePolicy import *
 from snellenPolicy import *
 from binaryBetaPolicy import *
 from rootFindingPolicy import *
+from exponentialFit3 import *
 import scipy.stats as stats
 import numpy as np
 import random
 
-N_EXPERIMENTS = 10000
+N_EXPERIMENTS = 200
 
 '''
 Size is in a range from 1 through 10
 '''
 
-FLOOR = 0.25
+FLOOR = (1. / 4.)
 C = 0.8
 
 def main():
-	Policy = RootFindingPolicy
+	Policy = ExponentialFitPolicy
 	for paramIndex in range(30):
 		paramValue = Policy.getParamValue(paramIndex)
 		nMu, errorMu = bootstrapExperiments(paramValue, Policy)
@@ -28,10 +29,11 @@ def bootstrapExperiments(paramValue, Policy):
 	errors = []
 	for i in range(N_EXPERIMENTS):
 		truthParams = sampleAPF()
-		#print(truthParams)
-		n, error = runPatientTest(truthParams, paramValue, Policy)
+		print(truthParams)
+		n, error, prediction = runPatientTest(truthParams, paramValue, Policy)
 		ns.append(n)
 		errors.append(error)
+		#print(i, truthParams, '=>', prediction)
 	return np.mean(ns), np.mean(errors)
 
 def runPatientTest(truthParams, paramValue, Policy):
@@ -47,9 +49,11 @@ def runPatientTest(truthParams, paramValue, Policy):
 	x_hat = policy.getAnswer()
 	x_star = truthParams[1]
 	error = abs(x_star - x_hat)/x_star
-	return nDone,error
+	return nDone,error,x_hat
 
 def simulateResponse(truthParams, size):
+	if(size < 0): 
+		return random.random() < FLOOR
 	k_0 = truthParams[0]
 	k_1 = truthParams[1]
 

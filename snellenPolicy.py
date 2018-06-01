@@ -11,7 +11,7 @@ SIZES = [
 
 SEARCH_P = 0.8
 
-class ManualPolicy:
+class SnellenPolicy:
 
 	@staticmethod
 	def getParamValue(paramIndex) :
