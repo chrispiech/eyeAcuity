@@ -2,12 +2,12 @@ from examplePolicy import *
 from snellenPolicy import *
 from binaryBetaPolicy import *
 from rootFindingPolicy import *
-from exponentialFit3 import *
+from exponentialFit4 import *
 import scipy.stats as stats
 import numpy as np
 import random
 
-N_EXPERIMENTS = 200
+N_EXPERIMENTS = 5
 
 '''
 Size is in a range from 1 through 10
@@ -29,7 +29,7 @@ def bootstrapExperiments(paramValue, Policy):
 	errors = []
 	for i in range(N_EXPERIMENTS):
 		truthParams = sampleAPF()
-		print(truthParams)
+		print(f'True params: {truthParams}')
 		n, error, prediction = runPatientTest(truthParams, paramValue, Policy)
 		ns.append(n)
 		errors.append(error)
@@ -39,6 +39,7 @@ def bootstrapExperiments(paramValue, Policy):
 def runPatientTest(truthParams, paramValue, Policy):
 	#print(truthParams)
 	policy = Policy(paramValue)
+
 	nDone = 0
 	while not policy.isDone():
 		size = policy.getNextSize()

@@ -2,8 +2,9 @@ import tensorflow as tf
 import numpy as np
 import math
 import random
+import scipy.stats as stats
 
-SEARCH_P = 0.5
+SEARCH_P = 0.8
 INIT_X = 9
 A_IN = 10
 
@@ -14,42 +15,80 @@ FLOOR = (1. / 4.)
 C = 0.8
 INF = 9999999
 
+
+# beta
+
+MIN_START = 1
+MAX_START = 10
+MIN_N = 3
+
 #this is the one where I use the OG formula
 
 class ExponentialFitPolicy:
 
-	@staticmethod
-	def getParamValue(paramIndex) :
-		# param is number of iterations
-		return 100 + 2 * paramIndex
 
-	def __init__(self, nIterations):
-		self.nIterations = nIterations
-		self.theta = INIT_X
-		self.n = 1
+	@staticmethod
+	def getParamValue(paramIndex):
+		# params are thresholds
+		# range from .7 to .99
+		
+		return min(0.95, 0.76 + (paramIndex * 0.02))
+		#return 2 + paramIndex
+
+	def __init__(self, threshold):
+		self.threshold = threshold
+		self.maxDepth = 4
+
+		self.min = MIN_START
+		self.max = MAX_START
+		self.depth = 0
+
 		self.results = []
 
-	def recordResponse(self, size, wasCorrect):
-		def a(n):
-			return A_IN/n
+		self.resetBeta()
 
-		y = SEARCH_P
-		y_n = 1 if wasCorrect else 0
-		
-		self.theta = self.theta - a(self.n) * (y_n - y)
-		self.n += 1
-
-		resultTuple = [size, y_n]
-		self.results.append(resultTuple)
+	def getCurrSize(self):
+		return (self.max + self.min) / 2
 
 	def getNextSize(self):
-		return self.theta
+		return self.getCurrSize()
+
+	def recordResponse(self, size, correct):
+		resultTuple = [size, 1 if correct else 0]
+		self.results.append(resultTuple)
+
+		self.n += 1
+		if correct:
+			self.a += 1
+		else:
+			self.b += 1
+		beta = stats.beta(self.a, self.b)
+		pUnderSearch = beta.cdf(SEARCH_P)
+		pOverSearch = 1.0 - pUnderSearch
+		#print(self.getCurrSize(), self.n, self.a, self.b, pUnderSearch, pOverSearch)
+		if self.n >= MIN_N and pOverSearch >= self.threshold:
+			#print('too large...')
+			self.max = self.getCurrSize()
+			self.depth += 1
+			self.resetBeta()
+			#print('')
+		if self.n >= MIN_N and pUnderSearch >= self.threshold:
+			#print('too small...')
+			self.min = self.getCurrSize()
+			self.depth += 1
+			self.resetBeta()
+			#print('')
 
 	def isDone(self):
-		return self.n > self.nIterations
+		return self.depth >= self.maxDepth
 
 	def getAnswer(self):
 		return self.exponentialFit()
+
+	def resetBeta(self):
+		self.n = 0
+		self.a = 0.5
+		self.b = 0.5
 
 	def exponentialFit(self):
 		X,y = self.reformatData()
@@ -67,7 +106,7 @@ class ExponentialFitPolicy:
 		p = tf.clip_by_value(px,MIN_P,MAX_P)
 		networkLoss = tf.reduce_mean(-(label * tf.log(p) + (1. - label) * tf.log(1. - p)))
 
-		loss_summary = tf.summary.scalar("networkLoss", networkLoss)
+		# loss_summary = tf.summary.scalar("networkLoss", networkLoss)
 
 		# optimizer
 		# optimizer = tf.train.AdamOptimizer(5e-4)
@@ -79,7 +118,7 @@ class ExponentialFitPolicy:
 		init = tf.global_variables_initializer()
 		sess.run(init)
 
-		summary_writer = tf.summary.FileWriter(f'./logs/{self.nIterations}/train', sess.graph)
+		# summary_writer = tf.summary.FileWriter(f'./logs/{self.nIterations}/train', sess.graph)
 
 		# merge = tf.summary.merge_all()
 
@@ -90,7 +129,7 @@ class ExponentialFitPolicy:
 
 		while not self.isConverged(k1s):
 			
-			output = sess.run([trainer, networkLoss, loss_summary], feed_dict={x:X, label:y})
+			output = sess.run([trainer, networkLoss], feed_dict={x:X, label:y})
 			loss = output[1]
 
 			curr_b = sess.run(b)[0]
@@ -98,11 +137,6 @@ class ExponentialFitPolicy:
 			curr_k1 = self.calcInv(curr_b, curr_lam)
 			k1s.append(curr_k1)
 
-
-
-			if step % LOG_EVERY == 0:
-				summary_writer.add_summary(output[2], step) 
-				# print('-->', curr_k1)
 
 			step += 1
 
@@ -152,4 +186,6 @@ class ExponentialFitPolicy:
 			# now x is in terms of "difficulty"
 			X[i] = self.results[i][0]
 			y[i] = self.results[i][1]
+		print(X)
+		print(y)
 		return X, y
