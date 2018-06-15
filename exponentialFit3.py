@@ -3,7 +3,7 @@ import numpy as np
 import math
 import random
 
-SEARCH_P = 0.5
+SEARCH_P = 0.7
 INIT_X = 9
 A_IN = 10
 

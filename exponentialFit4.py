@@ -32,7 +32,7 @@ class ExponentialFitPolicy:
 		# params are thresholds
 		# range from .7 to .99
 		
-		return min(0.95, 0.76 + (paramIndex * 0.02))
+		return min(0.95, 0.85 + (paramIndex * 0.02))
 		#return 2 + paramIndex
 
 	def __init__(self, threshold):
@@ -90,6 +90,10 @@ class ExponentialFitPolicy:
 		self.a = 0.5
 		self.b = 0.5
 
+	def lambdaFromK1(self, b_start):
+		k1 = self.getCurrSize()
+		return -np.log(0.2)/(k1 - b_start)
+
 	def exponentialFit(self):
 		X,y = self.reformatData()
 		
@@ -97,8 +101,19 @@ class ExponentialFitPolicy:
 		label = tf.placeholder(tf.float32)
 		x = tf.placeholder(tf.float32)
 
-		b = tf.Variable([5.], tf.float32)
-		lam = tf.Variable([1.], tf.float32)
+		b_start = self.min
+		lam_start = self.lambdaFromK1(b_start)
+
+
+		
+
+		k1_start = self.calcInv(b_start, lam_start)
+		# print(f'True k1: {self.getCurrSize()}, k1 start: {k1_start}')
+		print('---> ', b_start,  k1_start)
+
+		
+		b = tf.Variable([b_start], tf.float32)
+		lam = tf.Variable([lam_start], tf.float32)
 
 		# network
 		px = 1 - tf.exp(-lam * (x - b))
@@ -110,7 +125,7 @@ class ExponentialFitPolicy:
 
 		# optimizer
 		# optimizer = tf.train.AdamOptimizer(5e-4)
-		optimizer = tf.train.AdamOptimizer(5e-4)
+		optimizer = tf.train.AdamOptimizer(5e-3)
 		trainer = optimizer.minimize(networkLoss)
 
 		# session
@@ -123,11 +138,13 @@ class ExponentialFitPolicy:
 		# merge = tf.summary.merge_all()
 
 		k1s = []
+		bs = []
+		losses = []
 
 		step = 0
 		LOG_EVERY = 10
 
-		while not self.isConverged(k1s):
+		while not self.isConverged(k1s, bs, losses):
 			
 			output = sess.run([trainer, networkLoss], feed_dict={x:X, label:y})
 			loss = output[1]
@@ -135,6 +152,9 @@ class ExponentialFitPolicy:
 			curr_b = sess.run(b)[0]
 			curr_lam = sess.run(lam)[0]
 			curr_k1 = self.calcInv(curr_b, curr_lam)
+			losses.append(loss)
+			
+			bs.append(curr_b)
 			k1s.append(curr_k1)
 
 
@@ -153,9 +173,9 @@ class ExponentialFitPolicy:
 
 		return k1
 
-	def isConverged(self, k1s):
+	def isConverged(self, k1s, bs, losses):
 		if len(k1s) > 0 and len(k1s) % 10000 == 0:
-			print(k1s[-1])
+			print(bs[-1], k1s[-1], losses[-1])
 			inp = input('Continue? (y): ')
 			return inp != 'y'
 
