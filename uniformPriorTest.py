@@ -2,12 +2,15 @@ from examplePolicy import *
 from snellenPolicy import *
 from binaryBetaPolicy import *
 from rootFindingPolicy import *
-from exponentialFit4 import *
+from exploreFit import *
+from thompsonLossMin import *
 import scipy.stats as stats
 import numpy as np
 import random
 
-N_EXPERIMENTS = 5
+N_EXPERIMENTS = 200
+
+EXP_DESCRIPTION = 'minLossThompson with expected loss based x_t'
 
 '''
 Size is in a range from 1 through 10
@@ -16,9 +19,11 @@ Size is in a range from 1 through 10
 FLOOR = (1. / 4.)
 C = 0.8
 
+outlog = open('logs/uniformLog2.csv', 'a+')
+
 def main():
-	Policy = ExponentialFitPolicy
-	for paramIndex in range(30):
+	Policy = ThompsonPolicy
+	for paramIndex in range(20):
 		paramValue = Policy.getParamValue(paramIndex)
 		nMu, errorMu = bootstrapExperiments(paramValue, Policy)
 
@@ -29,10 +34,19 @@ def bootstrapExperiments(paramValue, Policy):
 	errors = []
 	for i in range(N_EXPERIMENTS):
 		truthParams = sampleAPF()
-		print(f'True params: {truthParams}')
+		if i % 10 == 0: 
+			print(i)
+			outlog.flush()
+		# print(f'True params: {truthParams}')
 		n, error, prediction = runPatientTest(truthParams, paramValue, Policy)
+		# print(f' => prediction: {prediction:.2f}')
+		# print(f' => loss: {error:.2f}')
+		# print(f' => n: {n}')
 		ns.append(n)
 		errors.append(error)
+		k0 = truthParams[0]
+		k1 = truthParams[1]
+		outlog.write(f'{k0:.2f}, {k1:.2f}, {prediction:.2f}, {n}, {error}, {EXP_DESCRIPTION}\n')
 		#print(i, truthParams, '=>', prediction)
 	return np.mean(ns), np.mean(errors)
 
@@ -81,4 +95,6 @@ def frange(small, large, delta):
 
 
 if __name__ == '__main__':
+	# random.seed(0)
+	# np.random.seed(seed=0)
 	main()

@@ -32,7 +32,7 @@ class ExponentialFitPolicy:
 		# params are thresholds
 		# range from .7 to .99
 		
-		return min(0.95, 0.85 + (paramIndex * 0.02))
+		return min(0.9, 0.85 + (paramIndex * 0.02))
 		#return 2 + paramIndex
 
 	def __init__(self, threshold):
@@ -101,7 +101,7 @@ class ExponentialFitPolicy:
 		label = tf.placeholder(tf.float32)
 		x = tf.placeholder(tf.float32)
 
-		b_start = self.min
+		b_start = self.getCurrSize() - 1
 		lam_start = self.lambdaFromK1(b_start)
 
 
@@ -125,7 +125,7 @@ class ExponentialFitPolicy:
 
 		# optimizer
 		# optimizer = tf.train.AdamOptimizer(5e-4)
-		optimizer = tf.train.AdamOptimizer(5e-3)
+		optimizer = tf.train.AdamOptimizer(5e-4)
 		trainer = optimizer.minimize(networkLoss)
 
 		# session
@@ -174,7 +174,7 @@ class ExponentialFitPolicy:
 		return k1
 
 	def isConverged(self, k1s, bs, losses):
-		if len(k1s) > 0 and len(k1s) % 10000 == 0:
+		if len(k1s) > 0 and len(k1s) % 1000 == 0:
 			print(bs[-1], k1s[-1], losses[-1])
 			inp = input('Continue? (y): ')
 			return inp != 'y'
