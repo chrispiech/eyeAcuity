@@ -16,10 +16,10 @@ class SnellenPolicy:
 	@staticmethod
 	def getParamValue(paramIndex) :
 		# The param is the number of tests at size
-		return 5 + paramIndex
+		return 5 
 
 	def __init__(self, nTestsPerSize):
-		self.nTestsPerSize = nTestsPerSize
+		self.nTestsPerSize = 5
 
 		self.nAtSize = 0
 		self.nCorrectAtSize = 0
@@ -43,6 +43,9 @@ class SnellenPolicy:
 
 	def getAnswer(self):
 		return self.finalAnswer
+
+	def setFloorProbability(self, floorP):
+		pass
 
 	def changeSize(self):
 		pCorrect = float(self.nCorrectAtSize) / self.nTestsPerSize

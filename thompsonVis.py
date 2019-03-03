@@ -14,7 +14,7 @@ A_IN = 10
 # for the exponential fit
 MIN_P = 1e-10
 MAX_P = 0.9999999
-FLOOR = (1. / 4.)
+DEFAULT_FLOOR = (1. / 4.)
 C = 0.8
 INF = 9999999
 
@@ -32,31 +32,46 @@ class ThompsonPolicy:
 
 	@staticmethod
 	def getParamValue(paramIndex):
-		return 20 + 5 * paramIndex
+		return 10 + 2 * paramIndex
 
-	def __init__(self, nQuestions):
+	def __init__(self, maxN):
 		plt.ion()
+		self.slipP = 0.
+		self.floorP = DEFAULT_FLOOR
 		self.n = 0
-		self.nQuestions = nQuestions
+		self.minN = 20
+		self.maxN = 20
+		self.minExpectedLoss = 0.001
 		self.results = []
 
 		# thompson specific fit matrix cache
 		self.axis = self.getAxis()
 		self.axisN = len(self.axis)
 		self.initParamCache()
-		# self.f = plt.figure(1)
+		self.f = plt.figure(1)
 		# self.g = plt.figure(2)
+
+	def setSlipProbability(self, slipP):
+		self.slipP = slipP
+
+	def setFloorProbability(self, floorP):
+		self.floorP = floorP
 
 	def getCurrSize(self):
 		return (self.max + self.min) / 2
 
 	def getNextSize(self):
 		posterior = self.marginalize()
+
 		# print(self.paramCache)
 		# self.showScores()
-		# self.showMarginal(posterior)
-		# input()
-		return self.thompsonChose(posterior)
+		self.showMarginal(posterior)
+		input()
+
+		self.expectedLoss, self.argMin = self.getMinLoss()
+
+		# return self.thompsonChose(posterior)
+		return self.argMin
 
 	def recordResponse(self, size, correct):
 		resultTuple = [size, 1 if correct else 0]
@@ -66,10 +81,35 @@ class ThompsonPolicy:
 		self.updateParamCache(resultTuple)
 
 	def isDone(self):
-		return self.n >= self.nQuestions
+
+		if self.n < self.minN:
+			return False
+		if self.n >= self.maxN:
+			return True
+		
+		return self.expectedLoss <= self.minExpectedLoss
 
 	def getAnswer(self):
-		return self.getNextSize()
+		return self.argMin
+
+	def getMinLoss(self):
+		posterior = self.marginalize()
+		posterior = posterior / sum(posterior)
+		minLoss = None
+		argMinLoss = None
+		for x_hat in self.axis:
+			exLoss = 0
+			for i in range(self.axisN):
+				x_star = self.axis[i]
+				p_x = posterior[i]
+				exLoss += self.loss(x_hat, x_star) * p_x
+			if minLoss == None or exLoss < minLoss:
+				minLoss = exLoss
+				argMinLoss = x_hat
+		return minLoss, argMinLoss
+
+	def loss(self, x_hat, x_star):
+		return abs(x_star - x_hat)/x_star
 
 	def thompsonChose(self, posterior):
 		maxP = None
@@ -110,8 +150,11 @@ class ThompsonPolicy:
 
 		# calculate p datum | parameters
 		exponent = (x - k0) / (k1 - k0)
-		p = 1 - math.pow(1 - C, exponent)
-		p = max(FLOOR, p)
+		p = 1 - math.pow((1-C), exponent)
+		p = max(self.floorP, p)
+
+		# add in the slip
+		p = self.slipP * self.floorP + (1 - self.slipP) * p
 
 		if y == 1:
 			pDatum = p
@@ -121,7 +164,7 @@ class ThompsonPolicy:
 		self.paramCache[i][j] *= pDatum
 
 	def getAxis(self):
-		return np.arange(1.0, 10.0, 0.1)
+		return np.arange(1.0, 10.0, 0.05)
 
 	def marginalize(self):
 		values = []
@@ -147,9 +190,8 @@ class ThompsonPolicy:
 
 	def showMarginal(self, marginal):
 		marginal = marginal / np.sum(marginal)
-		axis = self.axis()
-		self.f.clear()
-		plt.plot(axis, marginal)
+		# self.f.clear()
+		plt.plot(self.axis, marginal)
 		self.f.show()
 
 	def showScores(self):
