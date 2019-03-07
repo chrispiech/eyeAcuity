@@ -6,14 +6,15 @@ from thompsonLossMin import *
 from bayesianAcuityTest import *
 from batWithPrior import *
 from batPrecision import *
+from fract import *
 import scipy.stats as stats
 import numpy as np
 import random
 import math
 
-N_EXPERIMENTS = 100
+N_EXPERIMENTS = 10
 
-EXP_DESCRIPTION = 'BAT precision SlipP = 0.05, Floor = 1/4'
+EXP_DESCRIPTION = 'Fract precision SlipP = 0.05, Floor = 1/4'
 
 '''
 Size is in a range from 1 through 10
@@ -28,11 +29,11 @@ FLOORS = [
 	1. / 20.
 ]
 
-outlog = open('logs/noisyTest_within10pp_2.csv', 'a+')
+outlog = open('logs/noisyTest_fract.csv', 'a+')
 
 def main():
 	floorP = FLOORS[0]
-	Policy = BATPrecision
+	Policy = Fract
 	nMu, errorMu = bootstrapExperiments(floorP, Policy)
 	print(f'{floorP}, {nMu}, {errorMu}')
 
@@ -59,11 +60,11 @@ def bootstrapExperiments(floorP, Policy):
 	return np.mean(ns), np.mean(errors)
 
 def runPatientTest(truthParams, floorP, Policy):
-	policy = Policy(0.1)
+	policy = Policy(20)
 	policy.setFloorProbability(floorP)
-
+	
 	nDone = 0
-	# print(truthParams)
+	print(truthParams)
 	while not policy.isDone():
 		size = policy.getNextSize()
 		# print(size)
@@ -95,7 +96,8 @@ def simulateResponse(truthParams, floorP, size):
 	
 '''
 This method samples k1 and k0.
-log k1 ~ Gumbel(mu = )
+log k1 ~ Gumbel(mu = 0.3, beta = 0.5). Must be in the range
+-.3 to 1.
 '''
 def sampleAPF():
 	logK1 = rejectSampleGumbel(0.3, 0.5, -.3, 1.0)
