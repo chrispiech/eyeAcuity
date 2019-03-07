@@ -1,20 +1,22 @@
 from examplePolicy import *
 from snellenPolicy import *
 from binaryBetaPolicy import *
+from constPolicy import *
 from rootFindingPolicy import *
 from thompsonLossMin import *
 from bayesianAcuityTest import *
 from batWithPrior import *
 from batPrecision import *
-from fract import *
+from fract2 import *
 import scipy.stats as stats
 import numpy as np
 import random
 import math
 
-N_EXPERIMENTS = 10
+N_EXPERIMENTS = 1000
 
-EXP_DESCRIPTION = 'Fract precision SlipP = 0.05, Floor = 1/4'
+EXP_DESCRIPTION = 'Standard StAT for paper result. SlipP = 0.05, Floor = 1/4'
+SAVE = True
 
 '''
 Size is in a range from 1 through 10
@@ -29,11 +31,11 @@ FLOORS = [
 	1. / 20.
 ]
 
-outlog = open('logs/noisyTest_fract.csv', 'a+')
+outlog = open('logs/StAT-paper.csv', 'a+')
 
 def main():
 	floorP = FLOORS[0]
-	Policy = Fract
+	Policy = BayesianAcuityTest
 	nMu, errorMu = bootstrapExperiments(floorP, Policy)
 	print(f'{floorP}, {nMu}, {errorMu}')
 
@@ -45,7 +47,7 @@ def bootstrapExperiments(floorP, Policy):
 		# truthParams = (3.,4.)
 		if i % 10 == 0: 
 			print(i)
-			outlog.flush()
+			if SAVE: outlog.flush()
 		# print(f'True params: {truthParams}')
 		n, error, prediction = runPatientTest(truthParams, floorP, Policy)
 		# print(f' => prediction: {prediction:.2f}')
@@ -55,16 +57,17 @@ def bootstrapExperiments(floorP, Policy):
 		errors.append(error)
 		k0 = truthParams[0]
 		k1 = truthParams[1]
-		outlog.write(f'{k0:.2f}, {k1:.2f}, {prediction:.2f}, {n}, {error}, {EXP_DESCRIPTION}\n')
+		if SAVE: outlog.write(f'{k0:.2f}, {k1:.2f}, {prediction:.2f}, {n}, {error}, {EXP_DESCRIPTION}\n')
 		print(i, n, truthParams, '=>', prediction, '(' + str(error) + ')')
 	return np.mean(ns), np.mean(errors)
 
 def runPatientTest(truthParams, floorP, Policy):
+	priorK1 = truthParams[1] 
 	policy = Policy(20)
 	policy.setFloorProbability(floorP)
-	
+
 	nDone = 0
-	print(truthParams)
+	# print(truthParams)
 	while not policy.isDone():
 		size = policy.getNextSize()
 		# print(size)

@@ -49,7 +49,7 @@ class SnellenPolicy:
 
 	def changeSize(self):
 		pCorrect = float(self.nCorrectAtSize) / self.nTestsPerSize
-		if pCorrect <= SEARCH_P:
+		if pCorrect <= 0.5:
 			self.finalAnswer = SIZES[self.sizeIndex]
 			self.done = True
 			return

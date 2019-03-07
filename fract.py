@@ -5,7 +5,7 @@ import numpy.random as ra
 import scipy.stats as stats
 import tensorflow as tf
 
-SEARCH_P = 0.8
+SEARCH_P = 0.5
 
 # for the exponential fit
 MIN_P = 1e-10
@@ -14,7 +14,7 @@ FLOOR = (1. / 4.)
 C = SEARCH_P
 LEARN_F = -1
 
-TRAIN_ITERS = 5000
+TRAIN_ITERS = 2000
 ALPHA = 1e-3
 
 # constants which is (1-FLOOR) /(SEARCH - FLOOR) - 1
@@ -22,7 +22,7 @@ K = (1 - FLOOR)/(SEARCH_P - FLOOR) - 1
 
 # From the fract paper
 # https://www.ipexhealth.com/wp-content/uploads/2018/01/FrACT-Landolt-Vision.pdf
-# p(x) = f + (1 - f) * [1/(1+ [v0/x]^S)]
+# p(x) = f + (1 - f) * [1/(1+ [v0*x]^S)]
 class Fract:
 
 	def setFloorProbability(self, newFloor):
@@ -59,6 +59,7 @@ class Fract:
 		fit = self.fractFit(X, y, FLOOR)
 		[fitV0, fitS, fitF, loss] = fit
 		xStar = math.pow(K, 1/fitS) / fitV0
+		print(fitS, fitV0)
 		return xStar
 		# return self.getMostLikelyParticleK1()
 
@@ -66,6 +67,7 @@ class Fract:
 	##############################
 
 	def getBestNext(self):
+		raise Exception('not used')
 		return 2.0
 
 	def fractFit(self, X, y, fixedF = LEARN_F):
@@ -80,11 +82,13 @@ class Fract:
 		if fixedF != LEARN_F:
 			f = tf.constant(fixedF, tf.float32)
 		else:
+			raise Exception('not used')
 			f = tf.Variable([0.1],tf.float32)
-		v0 = tf.Variable([20.0],  tf.float32)
-		s  = tf.Variable([2.0] ,  tf.float32)
+		v0 = tf.Variable([2.2],  tf.float32)
+		s  = tf.Variable([6.0] ,  tf.float32)
 
 		# network
+		# p(x) = f + (1 - f) * [1/(1+ [v0*x]^S)]
 		p1 = 1.0/(1 + tf.pow(v0 * x, s))
 		p2 = f + (1-f) * p1
 		p3 = tf.clip_by_value(p2,MIN_P,MAX_P)
