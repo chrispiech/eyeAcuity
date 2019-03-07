@@ -6,14 +6,15 @@ from rootFindingPolicy import *
 from thompsonLossMin import *
 from bayesianAcuityTest import *
 from batWithPrior import *
-from batPrecision import *
+from batCalibration import *
 from fract2 import *
 import scipy.stats as stats
 import numpy as np
 import random
 import math
+import json
 
-N_EXPERIMENTS = 1000
+N_EXPERIMENTS = 50
 
 EXP_DESCRIPTION = 'Standard StAT for paper result. SlipP = 0.05, Floor = 1/4'
 SAVE = True
@@ -24,32 +25,58 @@ Size is in a range from 1 through 10
 C = 0.8
 SLIP_P = 0.05
 
-FLOORS = [
-	1. / 4.,
-	1. / 6.,
-	1. / 10.,
-	1. / 20.
-]
+FLOOR = 1. / 4.
+PRECISION = 0.1
 
-outlog = open('logs/StAT-paper.csv', 'a+')
+outlog = open('logs/StAT-fake.csv', 'a+')
+outlog_final = open('logs/StAT-calib.txt', 'w')
 
 def main():
-	floorP = FLOORS[0]
-	Policy = BayesianAcuityTest
-	nMu, errorMu = bootstrapExperiments(floorP, Policy)
-	print(f'{floorP}, {nMu}, {errorMu}')
+	Policy = BATCalibration
 
-def bootstrapExperiments(floorP, Policy):
+	# for paramIndex in range(20):
+	# paramValue = Policy.getParamValue(paramIndex)
+	nMu, errorMu, calib_info = bootstrapExperiments(Policy)
+
+
+	print(f'===> {nMu}, {errorMu}')
+
+	yTrue, yProb = list(zip(*calib_info))
+	yTrue = list(yTrue)
+	yProb = list(yProb)
+
+	out = {
+		'yTrue': yTrue,
+		'yProb': yProb
+	}
+
+	print(out)
+
+	json.dump(out, outlog_final)
+
+
+
+def bootstrapExperiments(Policy):
 	ns = []
 	errors = []
+	calib_info = []
 	for i in range(N_EXPERIMENTS):
 		truthParams = sampleAPF()
 		# truthParams = (3.,4.)
-		if i % 10 == 0: 
+		if i % 10 == 0:
 			print(i)
 			if SAVE: outlog.flush()
 		# print(f'True params: {truthParams}')
-		n, error, prediction = runPatientTest(truthParams, floorP, Policy)
+		n, error, prediction, prob = runPatientTest(truthParams, Policy)
+
+		in_err_range = int(error <= PRECISION)
+
+		calib_info.append((in_err_range, prob))
+
+		# if error <= PRECISION:
+			# num_in_range += 1
+		# else:
+			# print(f'out of error: err={error}, precisions={PRECISION}, confidence={confidence}')
 		# print(f' => prediction: {prediction:.2f}')
 		# print(f' => loss: {error:.2f}')
 		# print(f' => n: {n}')
@@ -58,33 +85,38 @@ def bootstrapExperiments(floorP, Policy):
 		k0 = truthParams[0]
 		k1 = truthParams[1]
 		if SAVE: outlog.write(f'{k0:.2f}, {k1:.2f}, {prediction:.2f}, {n}, {error}, {EXP_DESCRIPTION}\n')
-		print(i, n, truthParams, '=>', prediction, '(' + str(error) + ')')
-	return np.mean(ns), np.mean(errors)
 
-def runPatientTest(truthParams, floorP, Policy):
-	priorK1 = truthParams[1] 
-	policy = Policy(20)
-	policy.setFloorProbability(floorP)
+		print(i, n, truthParams, '=>', prediction, '(' + str(error) + ')')
+
+	return np.mean(ns), np.mean(errors), calib_info
+
+def runPatientTest(truthParams, Policy):
+	priorK1 = truthParams[1]
+	policy = Policy(PRECISION)
+	# policy.setFloorProbability(FLOOR)
 
 	nDone = 0
 	# print(truthParams)
 	while not policy.isDone():
 		size = policy.getNextSize()
 		# print(size)
-		answer = simulateResponse(truthParams, floorP,  size)
+		answer = simulateResponse(truthParams,  size)
 		policy.recordResponse(size, answer)
 		nDone += 1
 
-	x_hat = policy.getAnswer()
+	# x_hat = policy.getAnswer()
+	x_hat, prob = policy.getBestAnswerSoFar()
+
+
 	x_star = truthParams[1]
 	error = abs(x_star - x_hat)/x_star
-	return nDone,error,x_hat
+	return nDone, error, x_hat, prob
 
-def simulateResponse(truthParams, floorP, size):
-	if(size < 0): 
-		return random.random() < floorP
+def simulateResponse(truthParams, size):
+	if(size < 0):
+		return random.random() < FLOOR
 	if(random.random() < SLIP_P):
-		return random.random() < floorP
+		return random.random() < FLOOR
 	k_0 = truthParams[0]
 	k_1 = truthParams[1]
 
@@ -92,11 +124,11 @@ def simulateResponse(truthParams, floorP, size):
 	# if you overflow here, then return floopP
 	try:
 		expP = 1 - pow(1-C, pwr)
-		p = max(floorP, expP)
+		p = max(FLOOR, expP)
 	except:
-		p = floorP
+		p = FLOOR
 	return random.random() < p
-	
+
 '''
 This method samples k1 and k0.
 log k1 ~ Gumbel(mu = 0.3, beta = 0.5). Must be in the range
