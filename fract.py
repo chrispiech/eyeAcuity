@@ -34,6 +34,7 @@ class Fract:
 		return 20 + 5 * paramIndex
 
 	def __init__(self, nQuestions):
+		raise Excpetion("use fract2.py")
 		self.n = 0
 		self.nQuestions = nQuestions
 		self.results = []

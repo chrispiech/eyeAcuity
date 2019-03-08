@@ -40,12 +40,16 @@ def main():
 		buckets[i].append(err)
 
 	nSum = 0
-	for bucket in buckets:
+	for i in range(len(buckets)):
+		bucket = buckets[i]
 		n = len(bucket)
+		upper = bins[i+1]
+		lower = bins[i]
+		binLabel = (upper + lower)/2
 		aveErr = np.mean(bucket)
 		std = np.std(bucket)
 		stdErr = std / math.sqrt(n)
-		print(n, aveErr, stdErr)
+		print(n, binLabel,  aveErr, stdErr)
 		nSum += n
 	print(nSum)
 

@@ -39,7 +39,7 @@ class Fract2:
 
 	@staticmethod
 	def getParamValue(paramIndex):
-		return 20
+		return 20 + paramIndex * 5
 
 	def __init__(self, nQuestions):
 		self.n = 0

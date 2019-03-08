@@ -1,21 +1,21 @@
-from examplePolicy import *
+# from examplePolicy import *
 from snellenPolicy import *
-from binaryBetaPolicy import *
-from constPolicy import *
-from rootFindingPolicy import *
-from thompsonLossMin import *
-from bayesianAcuityTest import *
-from batWithPrior import *
-from batPrecision import *
-from fract2 import *
+# from binaryBetaPolicy import *
+# from constPolicy import *
+# from rootFindingPolicy import *
+# from thompsonLossMin import *
+# from bayesianAcuityTest import *
+# from batWithPrior import *
+# from batPrecision import *
+# from fract2 import *
 import scipy.stats as stats
 import numpy as np
 import random
 import math
 
-N_EXPERIMENTS = 1000
+N_EXPERIMENTS = 10000
 
-EXP_DESCRIPTION = 'Standard StAT for paper result. SlipP = 0.05, Floor = 1/4'
+EXP_DESCRIPTION = 'SlipP = 0.05, Floor = 1/4'
 SAVE = True
 
 '''
@@ -26,18 +26,18 @@ SLIP_P = 0.05
 
 FLOORS = [
 	1. / 4.,
-	1. / 6.,
-	1. / 10.,
-	1. / 20.
+	# 1. / 6.,
+	# 1. / 10.,
+	# 1. / 20.
 ]
 
-outlog = open('logs/StAT-paper.csv', 'a+')
+outlog = open('logs/noname.csv', 'a+')
 
 def main():
-	floorP = FLOORS[0]
-	Policy = BayesianAcuityTest
-	nMu, errorMu = bootstrapExperiments(floorP, Policy)
-	print(f'{floorP}, {nMu}, {errorMu}')
+	for floorP in FLOORS:
+		Policy = SnellenPolicy
+		nMu, errorMu = bootstrapExperiments(floorP, Policy)
+		print(f'{floorP}, {nMu}, {errorMu}')
 
 def bootstrapExperiments(floorP, Policy):
 	ns = []
@@ -58,7 +58,7 @@ def bootstrapExperiments(floorP, Policy):
 		k0 = truthParams[0]
 		k1 = truthParams[1]
 		if SAVE: outlog.write(f'{k0:.2f}, {k1:.2f}, {prediction:.2f}, {n}, {error}, {EXP_DESCRIPTION}\n')
-		print(i, n, truthParams, '=>', prediction, '(' + str(error) + ')')
+		print(i, n, truthParams, '=>', prediction, '(' + str(error) + ')', np.mean(errors))
 	return np.mean(ns), np.mean(errors)
 
 def runPatientTest(truthParams, floorP, Policy):
