@@ -1,6 +1,6 @@
 from examplePolicy import *
 from snellenPolicy import *
-from binaryBetaPolicy import *
+from bayesianAcuityTest import *
 from rootFindingPolicy import *
 from fract2 import Fract2
 # from rootNeighbourFindingPolicy import *
@@ -14,7 +14,7 @@ import math
 
 import matplotlib.pyplot as plt
 
-N_EXPERIMENTS = 500
+N_EXPERIMENTS = 200
 
 '''
 Size is in a range from 1 through 10
@@ -29,14 +29,14 @@ MAX_N = 100
 def main():
 
 	testPolicies = {
-		'snellen': SnellenPolicy,
+		# 'snellen': SnellenPolicy,
 		# 'rootFindng': RootFindingPolicy,
-		'fract': Fract2
+		# 'fract': Fract2
 		# 'rootMultipleSample': RootMultipleSamplePolicy
 
 		# 'rootNeighbourFindingPolicy': RootNeighbourFindingPolicy
 		# 'binaryBeta': BinaryBetaPolicy
-
+		'StAT' : BayesianAcuityTest
 	}
 
 

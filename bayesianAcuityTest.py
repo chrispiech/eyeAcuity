@@ -18,7 +18,7 @@ C = SEARCH_P
 P_SLIP = 0.05
 
 # model params
-N_SAMPLES = 5000
+N_SAMPLES = 1000
 MIN_LOG_MAR = -0.3
 MAX_LOG_MAR = 1.0
 
@@ -50,6 +50,8 @@ class BayesianAcuityTest:
 		# thompson specific fit matrix cache
 		self.particles = self.getParamSamples()
 		self.initWeights()
+		# sort the particles
+		self.sParticles = sorted(self.particles, key = lambda i: i['k1'])
 		# self.f = plt.figure(1)
 		# self.g = plt.figure(2)
 
@@ -108,16 +110,15 @@ class BayesianAcuityTest:
 		return argMax
 
 	def thompsonChose(self):
-		sParticles = sorted(self.particles, key = lambda i: i['k1']) 
 		cumProb = []
 		cdf = 0
-		for p in sParticles:
+		for p in self.sParticles:
 			normWeight = p['weight']
 			cdf += normWeight
 			cumProb.append(cdf)
 		r = ra.uniform(0, 1)
 		i = self.findIndex(r, cumProb)
-		return sParticles[i]['k1']
+		return self.sParticles[i]['k1']
 
  	# binary search
 	def findIndex(self, goal, cdf):
