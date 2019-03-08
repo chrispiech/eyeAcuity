@@ -1,5 +1,5 @@
 SIZES = [
-	10, 
+	10,
 	5,
 	3.5,
 	2.5,
@@ -16,10 +16,10 @@ class SnellenPolicy:
 	@staticmethod
 	def getParamValue(paramIndex) :
 		# The param is the number of tests at size
-		return 5 
+		return 5 + 2*paramIndex
 
 	def __init__(self, nTestsPerSize):
-		self.nTestsPerSize = 5
+		self.nTestsPerSize = nTestsPerSize
 
 		self.nAtSize = 0
 		self.nCorrectAtSize = 0
